@@ -33,4 +33,76 @@ WHERE
 GROUP BY
     trip_year
 ORDER BY
-    trip_year;
+
+
+-- 4. NULL check
+
+SELECT
+    COUNT(*) AS total_rows,
+
+    COUNTIF(starttime IS NULL)
+        AS starttime_null_count,
+
+    COUNTIF(stoptime IS NULL)
+        AS stoptime_null_count,
+
+    COUNTIF(start_station_name IS NULL)
+        AS start_station_null_count,
+
+    COUNTIF(end_station_name IS NULL)
+        AS end_station_null_count
+
+FROM
+    `bigquery-public-data.new_york_citibike.citibike_trips`;
+
+
+-- 5. NULL rate
+
+SELECT
+    COUNT(*) AS total_rows,
+
+    COUNTIF(starttime IS NULL)
+        AS starttime_null_count,
+
+    SAFE_DIVIDE(
+        COUNTIF(starttime IS NULL),
+        COUNT(*)
+    ) AS starttime_null_rate,
+
+    COUNTIF(stoptime IS NULL)
+        AS stoptime_null_count,
+
+    SAFE_DIVIDE(
+        COUNTIF(stoptime IS NULL),
+        COUNT(*)
+    ) AS stoptime_null_rate,
+
+    COUNTIF(start_station_name IS NULL)
+        AS start_station_name_null_count,
+
+    SAFE_DIVIDE(
+        COUNTIF(start_station_name IS NULL),
+        COUNT(*)
+    ) AS start_station_name_null_rate,
+
+    COUNTIF(end_station_name IS NULL)
+        AS end_station_name_null_count,
+
+    SAFE_DIVIDE(
+        COUNTIF(end_station_name IS NULL),
+        COUNT(*)
+    ) AS end_station_name_null_rate
+
+
+FROM
+    `bigquery-public-data.new_york_citibike.citibike_trips`;
+
+
+-- 6. Invalid trip time
+
+SELECT
+    COUNT(*) AS invalid_trip_count
+FROM
+    `bigquery-public-data.new_york_citibike.citibike_trips`
+WHERE
+    stoptime < starttime;

@@ -46,3 +46,29 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 - 요일 × 시간 이용 패턴 분석
 - 관찰 결과와 원인 해석 구분
 - 추가 검증이 필요한 분석 가설 정의
+
+### Day 4 - Station Demand Analysis
+
+- 전체 기간 기준 출발 Station 및 도착 Station Top 10 분석
+- Station ID와 Station Name을 함께 사용하여 Station 단위의 집계 기준 정의
+- Day 3에서 확인한 피크 시간대(08시, 17시, 18시)의 출발 Station Top 5 분석
+- `CTE`, `ROW_NUMBER()`, `PARTITION BY`, `QUALIFY`를 활용하여 시간대별 Station 순위 계산
+- 주말 12~17시 Trip을 하나의 분석 범위로 정의하여 주말 오후 주요 출발 Station Top 5 분석
+- 출발 Top 10과 도착 Top 10을 `INNER JOIN`하여 공통 Station의 출발량과 도착량 비교
+- 동일한 Station 개념을 `station_id`, `station_name`으로 표준화하여 JOIN 수행
+- 출발량과 도착량의 차이를 계산하여 Station별 이동 흐름 차이 탐색
+- 전체 기간, 피크 시간대, 주말 오후의 주요 Station 구성이 서로 다를 수 있음을 확인
+- Trip 발생량만으로 이용 목적, 실제 자전거 재고 상태, 운영상 문제를 단정할 수 없다는 분석 한계 정의
+
+#### Day 4 Key Findings
+
+- Pershing Square North는 전체 출발 Trip뿐만 아니라 08시, 17시, 18시에서도 높은 출발량을 보였다.
+- 08시와 17~18시에는 주요 출발 Station 구성이 서로 다르게 나타났다.
+- 17시와 18시는 주요 출발 Station 구성이 비교적 유사하게 나타났다.
+- 주말 12~17시에는 West St & Chambers St가 가장 높은 출발량을 기록했으며, 피크 시간대와는 다른 Station 구성이 나타났다.
+- 출발량이 높은 Station과 도착량이 높은 Station은 상당 부분 겹치지만 각 Station의 순위와 Trip 수는 동일하지 않았다.
+
+#### Day 4 Outputs
+
+- `sql/04_station_analysis.sql`
+- `docs/station_analysis.md`
