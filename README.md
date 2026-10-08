@@ -72,3 +72,33 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 
 - `sql/04_station_analysis.sql`
 - `docs/station_analysis.md`
+
+### Day 5 - Station Flow Analysis
+
+- Station ID와 Station Name의 관계를 검증하여 47개 Station ID에서 복수의 이름이 존재함을 확인
+- Station ID를 기준으로 출발량과 도착량을 각각 집계
+- `FULL OUTER JOIN`과 `COALESCE()`를 활용하여 전체 Station Flow 구성
+- `net_departure = start_count - end_count` 지표 정의
+- 전체 Station의 Net Departure 상위·하위 TOP 10 분석
+- `Hour × Station` Grain을 정의하고 복합 JOIN Key 적용
+- 08시, 17시, 18시의 시간대별 Net Departure TOP 5 분석
+- 전체 기간과 시간대별 Station Flow 차이 확인
+- Station ID 중복, NULL, Net Departure 계산 오류 검증
+- JOIN 전후 출발·도착 Trip 합계 보존 검증
+- Trip 흐름과 실제 자전거 재고 상태를 구분하여 분석 한계 정의
+
+#### Day 5 Key Findings
+
+- 전체 Station Flow에서 927개의 고유 Station ID가 확인되었다.
+- Station 519는 전체 기간 Net Departure +40,059건으로 가장 높은 값을 기록하였다.
+- Station 324는 전체 기간 Net Departure -29,976건으로 가장 낮은 값을 기록하였다.
+- 08시에는 Station 521, 17시에는 Station 359, 18시에는 Station 402의 Net Departure가 가장 높았다.
+- 전체 기간의 Station Flow 순위와 시간대별 Station Flow 순위는 동일하지 않았다.
+- 전체 출발 Trip과 도착 Trip은 각각 53,108,721건으로 동일하였다.
+- Station ID 중복, NULL, 계산 오류는 모두 0건이었다.
+- JOIN 전후 출발·도착 Trip 합계가 동일하게 유지되어 전체 Station Flow의 집계 보존 검증을 통과하였다.
+
+#### Day 5 Outputs
+
+- `sql/05_station_flow_analysis.sql`
+- `docs/station_flow_analysis.md`
