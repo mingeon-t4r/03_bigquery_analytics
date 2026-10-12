@@ -102,3 +102,28 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 
 - `sql/05_station_flow_analysis.sql`
 - `docs/station_flow_analysis.md`
+
+### Day 6 — BigQuery Data Mart Creation & Validation
+
+**Objective:** NYC Citi Bike 원본 데이터를 월별 Station 출발량 Data Mart로 구축하고 집계 정확성을 검증한다.
+
+**BigQuery Implementation**
+- `CREATE TABLE AS SELECT`를 사용하여 `station_monthly_summary` 생성
+- Grain: Month × Start Station
+- 저장 결과: 24,876행, 53개월, 881개 Station
+- 집계 Trip: 53,108,721건
+
+**Validation**
+- Grain 중복: 0건
+- NULL 및 비정상 집계값: 0건
+- 원본 대비 전체 Trip 차이: 0건
+- 월별 집계 불일치: 0행
+- Month × Station 집계 불일치: 0건
+
+**Deliverables**
+- `sql/06_create_data_mart.sql`
+- `docs/data_mart_design.md`
+
+**Key Learning:** BigQuery CTAS를 통한 영구 테이블 생성, Data Mart Grain 설계, Source-to-Target Reconciliation
+
+**Status:** Data Mart 생성 및 정확성 검증 완료. 성능과 비용 최적화는 미검증.
