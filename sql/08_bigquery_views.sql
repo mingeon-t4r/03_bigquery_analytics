@@ -405,3 +405,34 @@ FROM
 
 WHERE
     table_name = 'mv_station_total_usage';
+
+
+-- ============================================
+-- 13. Materialized View Refresh Settings
+-- ============================================
+
+-- Observed:
+-- enable_refresh = true
+-- refresh_interval_minutes = 30.0
+--
+-- Refresh interval is a configuration,
+-- not a guarantee of exact refresh timing.
+
+SELECT
+    table_name,
+    option_name,
+    option_value
+
+FROM
+    `bigquery-analytics-study.bigquery_learning.INFORMATION_SCHEMA.TABLE_OPTIONS`
+
+WHERE
+    table_name = 'mv_station_total_usage'
+
+    AND option_name IN (
+        'enable_refresh',
+        'refresh_interval_minutes'
+    )
+
+ORDER BY
+    option_name;
