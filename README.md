@@ -127,3 +127,44 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 **Key Learning:** BigQuery CTAS를 통한 영구 테이블 생성, Data Mart Grain 설계, Source-to-Target Reconciliation
 
 **Status:** Data Mart 생성 및 정확성 검증 완료. 성능과 비용 최적화는 미검증.
+
+### Day 7 — BigQuery Partitioning & Clustering
+
+**Objective:** BigQuery Data Mart에 Partitioning과 Clustering을 적용하고, 데이터 정확성과 쿼리 처리량을 비교하여 저장 구조 최적화의 효과와 한계를 검증한다.
+
+**BigQuery Implementation**
+- `PARTITION BY`를 이용한 날짜 기반 Partitioning 실습
+- BigQuery Sandbox의 Partition 만료 제한 확인
+- `RANGE_BUCKET()`과 `GENERATE_ARRAY()`를 활용한 정수 범위 Partitioning 적용
+- `station_id` 기준 100 간격의 정수 범위 Partition 구성
+- `CLUSTER BY trip_month`를 이용한 Clustering 적용
+- `INFORMATION_SCHEMA.PARTITIONS`를 이용한 Partition 메타데이터 조회
+
+**Data Validation**
+- 원본 Data Mart 행 수: 24,876건
+- 정수 범위 Partitioned Table 행 수: 24,876건
+- 전체 Trip 합계: 53,108,721건
+- 데이터가 존재하는 Partition: 14개
+- Partition 메타데이터의 전체 행 수 합계: 24,876건
+- Clustering 테이블의 Month × Station 집계 불일치: 0건
+
+**Performance Analysis**
+- Station 519 조회에서 일반 Data Mart와 정수 범위 Partitioned Table의 보고된 처리량 비교: 약 583KB → 약 48KB
+- 두 처리량 수치의 단위가 동일하다는 전제에서 약 91.8% 감소
+- 위 비교의 실행 후 Job 상세 정보는 별도로 확인하지 않아 측정 방식에 한계가 있음
+- Station 519 및 2017년 1월 조건의 실제 Job 처리량 비교: Partitioning만 적용한 경우 47.95KB, Clustering까지 적용한 경우 47.95KB
+- 두 쿼리의 청구된 바이트: 각각 10MB
+- Clustering 추가에 따른 처리량 감소: 관측되지 않음
+- 실행 시간은 단일 측정이므로 최적화 효과의 근거로 사용하지 않음
+
+**Key Findings**
+- Partitioning은 조회 조건과 일치하는 Partition을 선택하여 불필요한 데이터 읽기를 줄일 수 있다.
+- Clustering은 데이터 블록 단위로 작동하며, 데이터 규모와 조회 조건에 따라 추가적인 처리량 감소가 발생하지 않을 수 있다.
+- BigQuery Sandbox의 만료 제한을 고려하여 테이블 저장 구조를 설계해야 한다.
+- 저장 구조 최적화는 데이터 정확성과 실제 Job 측정값을 함께 검증해야 한다.
+
+**Deliverables**
+- `sql/07_partition_clustering.sql`
+- `docs/partition_clustering_analysis.md`
+
+**Status:** Partitioning 및 Clustering 실습, 데이터 정확성 검증, 처리량 비교 완료. GitHub 최종 검토 대기.
