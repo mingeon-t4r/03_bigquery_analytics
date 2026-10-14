@@ -167,4 +167,53 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 - `sql/07_partition_clustering.sql`
 - `docs/partition_clustering_analysis.md`
 
-**Status:** Partitioning 및 Clustering 실습, 데이터 정확성 검증, 처리량 비교 완료. GitHub 최종 검토 대기.
+**Status:** Partitioning 및 Clustering 실습, 데이터 정확성 검증, 처리량 비교 완료.
+
+### Day 8 — BigQuery Views & Reusable Analytics Layer
+
+**Objective:** BigQuery Standard View와 Materialized View를 활용하여 재사용 가능한 분석 계층을 구축하고, 데이터 정확성 및 실제 쿼리 처리량을 검증한다.
+
+**BigQuery Implementation**
+- `CREATE VIEW`를 활용한 월별 Station 조회 View 생성
+- `vw_station_monthly_usage`를 통한 Month × Station 데이터 조회
+- `vw_station_total_usage`를 통한 Station별 전체 출발량 집계 로직 재사용
+- `CREATE MATERIALIZED VIEW`를 활용한 집계 결과 저장 및 재사용
+- `INFORMATION_SCHEMA.MATERIALIZED_VIEWS`를 통한 갱신 상태 확인
+- `INFORMATION_SCHEMA.TABLE_OPTIONS`를 통한 자동 갱신 설정 확인
+
+**Data Validation**
+- 월별 View의 전체 행 수: 24,876건
+- 월별 View의 Trip 합계: 53,108,721건
+- 월별 View의 행 단위 누락 및 불일치: 0건
+- Station 집계 View 검증 대상: 881개 Station
+- Station 집계 View의 누락 및 불일치: 0건
+- Materialized View의 Station별 집계 불일치: 0건
+
+**Performance Analysis**
+- 비교 조건: `station_id = 519`
+- Standard View 처리량: 388.69 KB
+- Materialized View 처리량: 13.77 KB
+- 처리량 감소율: 약 96.5%
+- 두 쿼리의 Bytes billed: 각각 10 MB
+- Standard View 실행 시간: 195 ms
+- Materialized View 실행 시간: 278 ms
+- 단일 실행 결과이므로 실행 속도 개선은 입증되지 않음
+- Materialized View의 저장 및 갱신 유지 비용은 비교에 포함하지 않음
+
+**Materialized View Refresh**
+- 자동 갱신 활성화: `true`
+- 갱신 간격 설정: 30분
+- 마지막 갱신 오류 상태: `NULL`
+- 원본 데이터 변경 후 갱신 동작은 별도로 검증하지 않음
+
+**Key Findings**
+- Standard View는 SQL 정의를 저장하여 반복되는 분석 로직을 재사용할 수 있다.
+- Materialized View는 집계 결과를 저장하여 특정 조회에서 처리량을 줄일 수 있다.
+- 처리된 바이트 감소가 실제 청구 비용이나 실행 시간 개선을 의미하지는 않는다.
+- View 설계 시 재사용성, 데이터 정확성, 쿼리 처리량 및 갱신 정책을 함께 고려해야 한다.
+
+**Deliverables**
+- `sql/08_bigquery_views.sql`
+- `docs/view_design_analysis.md`
+
+**Status:** View 생성, 데이터 정확성 검증, 성능 비교 및 갱신 설정 확인 완료. GitHub 최종 검토 대기.
