@@ -216,4 +216,65 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 - `sql/08_bigquery_views.sql`
 - `docs/view_design_analysis.md`
 
-**Status:** View 생성, 데이터 정확성 검증, 성능 비교 및 갱신 설정 확인 완료. GitHub 최종 검토 대기.
+**Status:** View 생성, 데이터 정확성 검증, 성능 비교 및 갱신 설정 확인 완료.
+
+### Day 9 — BigQuery Window Functions & Monthly Trend Analysis
+
+**Objective:** BigQuery Window Function을 활용하여 Station별 순위와 월별 이용량 변화를 분석하고, 누락된 기간을 고려한 시계열 분석의 정확성을 검증한다.
+
+**BigQuery Implementation**
+
+- `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`를 활용한 월별 Station 순위 분석
+- 실제 동점 데이터를 활용한 세 가지 순위 함수의 차이 검증
+- `LAG()`를 활용한 이전 관측값 조회
+- `LEAD()`를 활용한 다음 관측값 조회
+- `DATE_SUB()`와 `DATE_DIFF()`를 활용한 월별 데이터 연속성 검증
+- `SAFE_DIVIDE()`를 활용한 전월 대비 증감률 계산
+- `CASE`를 활용한 증가·감소·비교 불가 유형 분류
+- `SUM() OVER()`를 활용한 연속 관측 기간 구분
+- `ARRAY_AGG()`를 활용한 구간별 시작값과 종료값 추출
+
+**Station Ranking Analysis**
+
+- 분석 기준 월: 2017년 4월
+- 분석 대상 Station: 613개
+- 해당 월 전체 출발량: 1,315,404건
+- 출발량 1위: Station 519, 12,408건
+- 실제 공동 40위 데이터에서 `RANK()`와 `DENSE_RANK()`의 차이 검증
+
+**Monthly Trend Analysis**
+
+- 분석 대상: Station 519
+- 월별 관측 기록: 53개월
+- 전월 비교 가능: 51개월
+- 증가: 30개월
+- 감소: 21개월
+- 비교 불가: 2개월
+- 증가량 합계: +53,061건
+- 감소량 합계: -39,474건
+- 유효한 연속 월 순변화 합계: +13,587건
+
+**Data Quality & Validation**
+
+- 2016년 10월부터 2017년 3월까지 6개월의 관측 공백 확인
+- 2016년 9월과 2017년 4월의 비교를 전월 대비 분석에서 제외
+- 연속 관측 기간을 2개 구간으로 분리
+- 첫 번째 구간 변화량: +9,266건
+- 두 번째 구간 변화량: +4,321건
+- 독립 검산 결과: +13,587건
+- 월별 증감량 합계와 기간별 검산 결과 일치
+
+**Key Findings**
+
+- Window Function은 기존 행을 유지하면서 순위와 이전·다음 관측값을 계산할 수 있다.
+- 동점 처리 방식에 따라 Station 순위와 선정 대상이 달라질 수 있다.
+- `LAG()`와 `LEAD()`를 월별 분석에 사용할 때는 실제 날짜의 연속성을 확인해야 한다.
+- 증가한 달의 개수만으로 장기적인 이용량 증가를 판단할 수 없다.
+- 시계열 분석은 변화 횟수, 변화 크기, 데이터 누락 여부 및 독립 검산을 함께 고려해야 한다.
+
+**Deliverables**
+
+- `sql/09_window_functions.sql`
+- `docs/window_function_analysis.md`
+
+**Status:** Window Function 실습, 월별 추세 분석, 누락 기간 검증 및 독립 검산 완료.
