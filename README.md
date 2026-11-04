@@ -278,3 +278,54 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 - `docs/window_function_analysis.md`
 
 **Status:** Window Function 실습, 월별 추세 분석, 누락 기간 검증 및 독립 검산 완료.
+
+### Day 10 — BigQuery Advanced Analytics
+
+**Objective:** BigQuery Window Function과 통계 집계 함수를 활용하여 Station별 이용 점유율, 월평균 출발량, 이동평균 및 변동성을 분석하고 결과를 검산한다.
+
+**BigQuery Implementation**
+
+- `SUM() OVER()`를 활용한 월별 Station 이용 점유율 계산
+- `AVG() OVER()`를 활용한 Station별 관측 월평균 분석
+- `ROWS BETWEEN`을 활용한 최근 3개 관측값 이동평균 계산
+- `LAG()`와 `DATE_SUB()`를 활용한 연속 3개월 이동평균 검증
+- `STDDEV_POP()`를 활용한 월별 이용량 변동성 분석
+- 변동계수(CV)를 활용한 Station 간 상대적 변동성 비교
+- `QUALIFY`와 `RANK()`를 활용한 월별 상위 Station 선정
+- 출발량 합계 및 전체 점유율 검산
+
+**Key Results**
+
+- 2017년 4월 분석 대상: 613개 Station
+- 2017년 4월 전체 출발량: 1,315,404건
+- Station 519 출발량: 12,408건
+- Station 519 점유율: 0.94%
+- Station 519 관측 월평균: 10,397.70건
+- Station 519 관측 기록: 53개월
+- 최고 변동계수 Station: 279
+- Station 279 변동계수: 72.54%
+- 2017년 4~5월 연속 3개월 이동평균: NULL
+- 2017년 6월 연속 3개월 이동평균: 14,766.00건
+
+**Validation**
+
+- Station별 출발량 합계: 1,315,404건
+- Window Function 월 전체 출발량: 1,315,404건
+- 출발량 차이: 0건
+- 점유율 합계: 100.0%
+- 집계 일관성 검산 통과
+
+**Key Learnings**
+
+- `GROUP BY`와 Window Function의 집계 방식 차이 이해
+- 행 기준 이동평균과 달력상 연속 개월 이동평균 구분
+- 평균, 표준편차 및 변동계수의 의미와 한계 이해
+- `QUALIFY`를 활용한 Window Function 결과 필터링
+- 분석 지표의 합계 및 비율 검산 수행
+
+**Deliverables**
+
+- `sql/10_advanced_analytics.sql`
+- `docs/advanced_analytics.md`
+
+**Status:** Day 10 completed.
