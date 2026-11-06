@@ -329,3 +329,21 @@ Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 
 - `docs/advanced_analytics.md`
 
 **Status:** Day 10 completed.
+
+## Day 11 — BigQuery와 Python 연동 분석
+
+BigQuery SQL을 Python에서 실행하고, 조회 결과를 pandas DataFrame으로 변환하여 집계 및 시각화하는 분석 과정을 수행했다.
+Station 519의 월별 출발 이용량을 대상으로 SQL과 pandas의 결과를 교차 검증하고, 누락된 월을 식별하여 데이터 품질을 확인했다.
+
+**주요 결과**
+- 관측 월: 53개월
+- 전체 분석 기간: 59개월
+- 누락 월: 6개월
+- 총 출발 이용량: 551,078건
+- 관측 월 기준 평균: 10,397.70건
+- SQL과 pandas 집계 검증: 전 항목 일치
+
+**산출물**
+- [SQL 검증 쿼리](sql/11_bigquery_python_validation.sql)
+- [Python 분석 Notebook](notebooks/11_bigquery_python_validation.ipynb)
+- [분석 보고서](docs/bigquery_python_analysis.md)
