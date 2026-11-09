@@ -347,3 +347,48 @@ Station 519의 월별 출발 이용량을 대상으로 SQL과 pandas의 결과�
 - [SQL 검증 쿼리](sql/11_bigquery_python_validation.sql)
 - [Python 분석 Notebook](notebooks/11_bigquery_python_validation.ipynb)
 - [분석 보고서](docs/bigquery_python_analysis.md)
+
+### Day 12 — BigQuery × Python Analysis Pipeline
+
+**Objective:** BigQuery Data Mart를 Python으로 조회하고, 데이터 품질 검증, Station별 집계 및 SQL과 pandas의 교차 검증을 수행하여 재사용 가능한 분석 파이프라인을 구성한다.
+
+**Implementation**
+
+- BigQuery 조회 결과를 pandas DataFrame으로 변환
+- NULL, 중복, 음수 이용량 및 전체 합계 검증
+- `groupby()`와 `agg()`를 활용한 Station별 지표 생성
+- 전체 이용량 Top 10과 월평균 이용량 Top 10 비교
+- `pd.merge()`를 이용한 SQL과 pandas 결과 교차 검증
+- 정수 기반 평균 검산을 통한 반올림 차이 분석
+- `validate_data()` 검증 함수 구현
+- 오류 데이터 주입을 통한 Negative Testing
+
+**Key Results**
+
+- 분석 행 수: 24,876건
+- 분석 Station 수: 881개
+- 전체 이용량: 53,108,721건
+- NULL, 중복, 음수 이용량: 0건
+- 집계 전후 전체 이용량 차이: 0건
+- 전체 이용량 Top 10과 월평균 Top 10의 공통 Station: 7개
+- SQL과 pandas의 평균 표시값 불일치: 18개
+- 정수 기반 평균 검산: 881개 Station 전체 일치
+- 정상 데이터 검증: 통과
+- 오류 데이터 검증: 실패 정상 감지
+
+**Key Learnings**
+
+- BigQuery SQL과 pandas 집계 로직 비교
+- 데이터 Grain과 집계 정확성 검증
+- 누적 이용량과 월평균 이용량의 해석 차이
+- 부동소수점 및 반올림 차이의 원인 조사
+- 재사용 가능한 데이터 품질 검증 함수 구현
+- Negative Testing을 통한 검증 로직 확인
+
+**Deliverables**
+
+- `sql/12_station_pipeline_validation.sql`
+- `notebooks/12_bigquery_analysis_pipeline.ipynb`
+- `docs/bigquery_pipeline_analysis.md`
+
+**Status:** Day 12 completed.
