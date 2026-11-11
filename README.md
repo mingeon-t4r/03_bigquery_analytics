@@ -1,443 +1,285 @@
-# BigQuery Analytics Project
-
-Google BigQuery를 이용하여 대규모 공개 데이터를 탐색하고, SQL 분석부터 데이터마트 구축 및 Python 연동까지 수행하는 프로젝트입니다.
-
-## Tech Stack
-
-- Google BigQuery
-- GoogleSQL
-- Python
-- pandas
-- Jupyter Notebook
-
-## Progress
-
-### Day 1 - BigQuery Environment & Data Exploration
-
-- Google Cloud / BigQuery 환경 구축
-- BigQuery Project / Dataset 구조 이해
-- NYC Citi Bike Public Dataset 탐색
-- Dataset grain 및 schema 확인
-- Query processing size 확인
-- SELECT *와 필요한 컬럼 조회의 처리량 비교
-- BigQuery의 columnar processing 특성 이해
-
-
-### Day 2 - Data Quality Validation
-
-- 전체 Trip 수 및 데이터 분석 기간 확인
-- 주요 컬럼의 NULL 개수와 비율 검증
-- starttime / stoptime 데이터 품질 확인
-- 비정상적인 시간 순서 데이터 탐색
-- tripduration의 최소·평균·최댓값 확인
-- 극단값 존재 여부 탐색
-- 분석 목적에 따른 데이터 제외 기준 검토
-- 추가 검증이 필요한 데이터 품질 문제 정의
+# NYC Citi Bike Analytics — BigQuery & Python
 
+## 프로젝트 개요
 
-### Day 3 - Usage Pattern Analysis
-
-- 분석 질문 및 분석 범위 정의
-- Metric과 Dimension 정의
-- 분석 기준 시간(starttime) 정의
-- 월별 Citi Bike 이용량 분석
-- 요일별 이용량 분석
-- 시간대별 이용량 분석
-- 요일 × 시간 이용 패턴 분석
-- 관찰 결과와 원인 해석 구분
-- 추가 검증이 필요한 분석 가설 정의
-
-### Day 4 - Station Demand Analysis
-
-- 전체 기간 기준 출발 Station 및 도착 Station Top 10 분석
-- Station ID와 Station Name을 함께 사용하여 Station 단위의 집계 기준 정의
-- Day 3에서 확인한 피크 시간대(08시, 17시, 18시)의 출발 Station Top 5 분석
-- `CTE`, `ROW_NUMBER()`, `PARTITION BY`, `QUALIFY`를 활용하여 시간대별 Station 순위 계산
-- 주말 12~17시 Trip을 하나의 분석 범위로 정의하여 주말 오후 주요 출발 Station Top 5 분석
-- 출발 Top 10과 도착 Top 10을 `INNER JOIN`하여 공통 Station의 출발량과 도착량 비교
-- 동일한 Station 개념을 `station_id`, `station_name`으로 표준화하여 JOIN 수행
-- 출발량과 도착량의 차이를 계산하여 Station별 이동 흐름 차이 탐색
-- 전체 기간, 피크 시간대, 주말 오후의 주요 Station 구성이 서로 다를 수 있음을 확인
-- Trip 발생량만으로 이용 목적, 실제 자전거 재고 상태, 운영상 문제를 단정할 수 없다는 분석 한계 정의
-
-#### Day 4 Key Findings
-
-- Pershing Square North는 전체 출발 Trip뿐만 아니라 08시, 17시, 18시에서도 높은 출발량을 보였다.
-- 08시와 17~18시에는 주요 출발 Station 구성이 서로 다르게 나타났다.
-- 17시와 18시는 주요 출발 Station 구성이 비교적 유사하게 나타났다.
-- 주말 12~17시에는 West St & Chambers St가 가장 높은 출발량을 기록했으며, 피크 시간대와는 다른 Station 구성이 나타났다.
-- 출발량이 높은 Station과 도착량이 높은 Station은 상당 부분 겹치지만 각 Station의 순위와 Trip 수는 동일하지 않았다.
-
-#### Day 4 Outputs
-
-- `sql/04_station_analysis.sql`
-- `docs/station_analysis.md`
-
-### Day 5 - Station Flow Analysis
-
-- Station ID와 Station Name의 관계를 검증하여 47개 Station ID에서 복수의 이름이 존재함을 확인
-- Station ID를 기준으로 출발량과 도착량을 각각 집계
-- `FULL OUTER JOIN`과 `COALESCE()`를 활용하여 전체 Station Flow 구성
-- `net_departure = start_count - end_count` 지표 정의
-- 전체 Station의 Net Departure 상위·하위 TOP 10 분석
-- `Hour × Station` Grain을 정의하고 복합 JOIN Key 적용
-- 08시, 17시, 18시의 시간대별 Net Departure TOP 5 분석
-- 전체 기간과 시간대별 Station Flow 차이 확인
-- Station ID 중복, NULL, Net Departure 계산 오류 검증
-- JOIN 전후 출발·도착 Trip 합계 보존 검증
-- Trip 흐름과 실제 자전거 재고 상태를 구분하여 분석 한계 정의
-
-#### Day 5 Key Findings
-
-- 전체 Station Flow에서 927개의 고유 Station ID가 확인되었다.
-- Station 519는 전체 기간 Net Departure +40,059건으로 가장 높은 값을 기록하였다.
-- Station 324는 전체 기간 Net Departure -29,976건으로 가장 낮은 값을 기록하였다.
-- 08시에는 Station 521, 17시에는 Station 359, 18시에는 Station 402의 Net Departure가 가장 높았다.
-- 전체 기간의 Station Flow 순위와 시간대별 Station Flow 순위는 동일하지 않았다.
-- 전체 출발 Trip과 도착 Trip은 각각 53,108,721건으로 동일하였다.
-- Station ID 중복, NULL, 계산 오류는 모두 0건이었다.
-- JOIN 전후 출발·도착 Trip 합계가 동일하게 유지되어 전체 Station Flow의 집계 보존 검증을 통과하였다.
-
-#### Day 5 Outputs
-
-- `sql/05_station_flow_analysis.sql`
-- `docs/station_flow_analysis.md`
-
-### Day 6 — BigQuery Data Mart Creation & Validation
-
-**Objective:** NYC Citi Bike 원본 데이터를 월별 Station 출발량 Data Mart로 구축하고 집계 정확성을 검증한다.
-
-**BigQuery Implementation**
-- `CREATE TABLE AS SELECT`를 사용하여 `station_monthly_summary` 생성
-- Grain: Month × Start Station
-- 저장 결과: 24,876행, 53개월, 881개 Station
-- 집계 Trip: 53,108,721건
-
-**Validation**
-- Grain 중복: 0건
-- NULL 및 비정상 집계값: 0건
-- 원본 대비 전체 Trip 차이: 0건
-- 월별 집계 불일치: 0행
-- Month × Station 집계 불일치: 0건
-
-**Deliverables**
-- `sql/06_create_data_mart.sql`
-- `docs/data_mart_design.md`
-
-**Key Learning:** BigQuery CTAS를 통한 영구 테이블 생성, Data Mart Grain 설계, Source-to-Target Reconciliation
-
-**Status:** Data Mart 생성 및 정확성 검증 완료. 성능과 비용 최적화는 미검증.
-
-### Day 7 — BigQuery Partitioning & Clustering
-
-**Objective:** BigQuery Data Mart에 Partitioning과 Clustering을 적용하고, 데이터 정확성과 쿼리 처리량을 비교하여 저장 구조 최적화의 효과와 한계를 검증한다.
-
-**BigQuery Implementation**
-- `PARTITION BY`를 이용한 날짜 기반 Partitioning 실습
-- BigQuery Sandbox의 Partition 만료 제한 확인
-- `RANGE_BUCKET()`과 `GENERATE_ARRAY()`를 활용한 정수 범위 Partitioning 적용
-- `station_id` 기준 100 간격의 정수 범위 Partition 구성
-- `CLUSTER BY trip_month`를 이용한 Clustering 적용
-- `INFORMATION_SCHEMA.PARTITIONS`를 이용한 Partition 메타데이터 조회
-
-**Data Validation**
-- 원본 Data Mart 행 수: 24,876건
-- 정수 범위 Partitioned Table 행 수: 24,876건
-- 전체 Trip 합계: 53,108,721건
-- 데이터가 존재하는 Partition: 14개
-- Partition 메타데이터의 전체 행 수 합계: 24,876건
-- Clustering 테이블의 Month × Station 집계 불일치: 0건
-
-**Performance Analysis**
-- Station 519 조회에서 일반 Data Mart와 정수 범위 Partitioned Table의 보고된 처리량 비교: 약 583KB → 약 48KB
-- 두 처리량 수치의 단위가 동일하다는 전제에서 약 91.8% 감소
-- 위 비교의 실행 후 Job 상세 정보는 별도로 확인하지 않아 측정 방식에 한계가 있음
-- Station 519 및 2017년 1월 조건의 실제 Job 처리량 비교: Partitioning만 적용한 경우 47.95KB, Clustering까지 적용한 경우 47.95KB
-- 두 쿼리의 청구된 바이트: 각각 10MB
-- Clustering 추가에 따른 처리량 감소: 관측되지 않음
-- 실행 시간은 단일 측정이므로 최적화 효과의 근거로 사용하지 않음
-
-**Key Findings**
-- Partitioning은 조회 조건과 일치하는 Partition을 선택하여 불필요한 데이터 읽기를 줄일 수 있다.
-- Clustering은 데이터 블록 단위로 작동하며, 데이터 규모와 조회 조건에 따라 추가적인 처리량 감소가 발생하지 않을 수 있다.
-- BigQuery Sandbox의 만료 제한을 고려하여 테이블 저장 구조를 설계해야 한다.
-- 저장 구조 최적화는 데이터 정확성과 실제 Job 측정값을 함께 검증해야 한다.
-
-**Deliverables**
-- `sql/07_partition_clustering.sql`
-- `docs/partition_clustering_analysis.md`
-
-**Status:** Partitioning 및 Clustering 실습, 데이터 정확성 검증, 처리량 비교 완료.
-
-### Day 8 — BigQuery Views & Reusable Analytics Layer
-
-**Objective:** BigQuery Standard View와 Materialized View를 활용하여 재사용 가능한 분석 계층을 구축하고, 데이터 정확성 및 실제 쿼리 처리량을 검증한다.
-
-**BigQuery Implementation**
-- `CREATE VIEW`를 활용한 월별 Station 조회 View 생성
-- `vw_station_monthly_usage`를 통한 Month × Station 데이터 조회
-- `vw_station_total_usage`를 통한 Station별 전체 출발량 집계 로직 재사용
-- `CREATE MATERIALIZED VIEW`를 활용한 집계 결과 저장 및 재사용
-- `INFORMATION_SCHEMA.MATERIALIZED_VIEWS`를 통한 갱신 상태 확인
-- `INFORMATION_SCHEMA.TABLE_OPTIONS`를 통한 자동 갱신 설정 확인
-
-**Data Validation**
-- 월별 View의 전체 행 수: 24,876건
-- 월별 View의 Trip 합계: 53,108,721건
-- 월별 View의 행 단위 누락 및 불일치: 0건
-- Station 집계 View 검증 대상: 881개 Station
-- Station 집계 View의 누락 및 불일치: 0건
-- Materialized View의 Station별 집계 불일치: 0건
-
-**Performance Analysis**
-- 비교 조건: `station_id = 519`
-- Standard View 처리량: 388.69 KB
-- Materialized View 처리량: 13.77 KB
-- 처리량 감소율: 약 96.5%
-- 두 쿼리의 Bytes billed: 각각 10 MB
-- Standard View 실행 시간: 195 ms
-- Materialized View 실행 시간: 278 ms
-- 단일 실행 결과이므로 실행 속도 개선은 입증되지 않음
-- Materialized View의 저장 및 갱신 유지 비용은 비교에 포함하지 않음
-
-**Materialized View Refresh**
-- 자동 갱신 활성화: `true`
-- 갱신 간격 설정: 30분
-- 마지막 갱신 오류 상태: `NULL`
-- 원본 데이터 변경 후 갱신 동작은 별도로 검증하지 않음
-
-**Key Findings**
-- Standard View는 SQL 정의를 저장하여 반복되는 분석 로직을 재사용할 수 있다.
-- Materialized View는 집계 결과를 저장하여 특정 조회에서 처리량을 줄일 수 있다.
-- 처리된 바이트 감소가 실제 청구 비용이나 실행 시간 개선을 의미하지는 않는다.
-- View 설계 시 재사용성, 데이터 정확성, 쿼리 처리량 및 갱신 정책을 함께 고려해야 한다.
-
-**Deliverables**
-- `sql/08_bigquery_views.sql`
-- `docs/view_design_analysis.md`
-
-**Status:** View 생성, 데이터 정확성 검증, 성능 비교 및 갱신 설정 확인 완료.
-
-### Day 9 — BigQuery Window Functions & Monthly Trend Analysis
-
-**Objective:** BigQuery Window Function을 활용하여 Station별 순위와 월별 이용량 변화를 분석하고, 누락된 기간을 고려한 시계열 분석의 정확성을 검증한다.
-
-**BigQuery Implementation**
-
-- `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`를 활용한 월별 Station 순위 분석
-- 실제 동점 데이터를 활용한 세 가지 순위 함수의 차이 검증
-- `LAG()`를 활용한 이전 관측값 조회
-- `LEAD()`를 활용한 다음 관측값 조회
-- `DATE_SUB()`와 `DATE_DIFF()`를 활용한 월별 데이터 연속성 검증
-- `SAFE_DIVIDE()`를 활용한 전월 대비 증감률 계산
-- `CASE`를 활용한 증가·감소·비교 불가 유형 분류
-- `SUM() OVER()`를 활용한 연속 관측 기간 구분
-- `ARRAY_AGG()`를 활용한 구간별 시작값과 종료값 추출
-
-**Station Ranking Analysis**
-
-- 분석 기준 월: 2017년 4월
-- 분석 대상 Station: 613개
-- 해당 월 전체 출발량: 1,315,404건
-- 출발량 1위: Station 519, 12,408건
-- 실제 공동 40위 데이터에서 `RANK()`와 `DENSE_RANK()`의 차이 검증
-
-**Monthly Trend Analysis**
-
-- 분석 대상: Station 519
-- 월별 관측 기록: 53개월
-- 전월 비교 가능: 51개월
-- 증가: 30개월
-- 감소: 21개월
-- 비교 불가: 2개월
-- 증가량 합계: +53,061건
-- 감소량 합계: -39,474건
-- 유효한 연속 월 순변화 합계: +13,587건
-
-**Data Quality & Validation**
-
-- 2016년 10월부터 2017년 3월까지 6개월의 관측 공백 확인
-- 2016년 9월과 2017년 4월의 비교를 전월 대비 분석에서 제외
-- 연속 관측 기간을 2개 구간으로 분리
-- 첫 번째 구간 변화량: +9,266건
-- 두 번째 구간 변화량: +4,321건
-- 독립 검산 결과: +13,587건
-- 월별 증감량 합계와 기간별 검산 결과 일치
-
-**Key Findings**
-
-- Window Function은 기존 행을 유지하면서 순위와 이전·다음 관측값을 계산할 수 있다.
-- 동점 처리 방식에 따라 Station 순위와 선정 대상이 달라질 수 있다.
-- `LAG()`와 `LEAD()`를 월별 분석에 사용할 때는 실제 날짜의 연속성을 확인해야 한다.
-- 증가한 달의 개수만으로 장기적인 이용량 증가를 판단할 수 없다.
-- 시계열 분석은 변화 횟수, 변화 크기, 데이터 누락 여부 및 독립 검산을 함께 고려해야 한다.
-
-**Deliverables**
-
-- `sql/09_window_functions.sql`
-- `docs/window_function_analysis.md`
-
-**Status:** Window Function 실습, 월별 추세 분석, 누락 기간 검증 및 독립 검산 완료.
-
-### Day 10 — BigQuery Advanced Analytics
-
-**Objective:** BigQuery Window Function과 통계 집계 함수를 활용하여 Station별 이용 점유율, 월평균 출발량, 이동평균 및 변동성을 분석하고 결과를 검산한다.
-
-**BigQuery Implementation**
-
-- `SUM() OVER()`를 활용한 월별 Station 이용 점유율 계산
-- `AVG() OVER()`를 활용한 Station별 관측 월평균 분석
-- `ROWS BETWEEN`을 활용한 최근 3개 관측값 이동평균 계산
-- `LAG()`와 `DATE_SUB()`를 활용한 연속 3개월 이동평균 검증
-- `STDDEV_POP()`를 활용한 월별 이용량 변동성 분석
-- 변동계수(CV)를 활용한 Station 간 상대적 변동성 비교
-- `QUALIFY`와 `RANK()`를 활용한 월별 상위 Station 선정
-- 출발량 합계 및 전체 점유율 검산
-
-**Key Results**
-
-- 2017년 4월 분석 대상: 613개 Station
-- 2017년 4월 전체 출발량: 1,315,404건
-- Station 519 출발량: 12,408건
-- Station 519 점유율: 0.94%
-- Station 519 관측 월평균: 10,397.70건
-- Station 519 관측 기록: 53개월
-- 최고 변동계수 Station: 279
-- Station 279 변동계수: 72.54%
-- 2017년 4~5월 연속 3개월 이동평균: NULL
-- 2017년 6월 연속 3개월 이동평균: 14,766.00건
-
-**Validation**
-
-- Station별 출발량 합계: 1,315,404건
-- Window Function 월 전체 출발량: 1,315,404건
-- 출발량 차이: 0건
-- 점유율 합계: 100.0%
-- 집계 일관성 검산 통과
-
-**Key Learnings**
-
-- `GROUP BY`와 Window Function의 집계 방식 차이 이해
-- 행 기준 이동평균과 달력상 연속 개월 이동평균 구분
-- 평균, 표준편차 및 변동계수의 의미와 한계 이해
-- `QUALIFY`를 활용한 Window Function 결과 필터링
-- 분석 지표의 합계 및 비율 검산 수행
-
-**Deliverables**
-
-- `sql/10_advanced_analytics.sql`
-- `docs/advanced_analytics.md`
-
-**Status:** Day 10 completed.
-
-## Day 11 — BigQuery와 Python 연동 분석
-
-BigQuery SQL을 Python에서 실행하고, 조회 결과를 pandas DataFrame으로 변환하여 집계 및 시각화하는 분석 과정을 수행했다.
-Station 519의 월별 출발 이용량을 대상으로 SQL과 pandas의 결과를 교차 검증하고, 누락된 월을 식별하여 데이터 품질을 확인했다.
-
-**주요 결과**
+NYC Citi Bike의 공개 운행 데이터를 활용하여 이용 패턴, Station별 수요, 출발·도착 흐름 및 월별 수요 변동성을 분석한 데이터 분석 프로젝트다.
+
+Google BigQuery를 이용해 대규모 원본 데이터를 탐색하고, SQL 기반 데이터 품질 검증과 Data Mart 구축을 수행했다.
+이후 Python과 pandas를 활용하여 집계 결과를 교차 검증하고, 수요 규모와 변동성을 기준으로 추가 운영 분석이 필요한 Station을 선정했다.
+
+**최종 분석 결과, 전체 881개 출발 Station 중 29개를 운영 우선 검토 후보로 선정했다.**
+
+이 프로젝트의 목적은 실제 자전거 배치량을 결정하는 것이 아니라, 관측 데이터에 근거하여 추가 조사가 필요한 대상을 식별하고 분석 결과의 정확성과 한계를 검증하는 것이다.
+
+## 핵심 분석 결과
+
+| 지표 | 결과 |
+|---|---:|
+| 원본 Trip | 58,937,715건 |
+| Data Mart 분석 대상 Trip | 53,108,721건 |
+| 월별 Station Data Mart | 24,876행 |
+| 출발 Station 수 | 881개 |
+| 관측 월 24개월 이상 Station | 461개 |
+| 고수요 Station | 116개 |
+| 최종 운영 검토 후보 | 29개 |
+| 최종 후보 누적 이용량 | 5,993,530건 |
+| 전체 대비 후보 이용량 비중 | 11.29% |
+| 최종 후보 CV 단순 평균 | 49.96% |
+
+최종 후보 29개는 전체 출발 Station의 약 3.3%에 해당하며, 전체 관측 출발 이용량의 11.29%를 차지했다.
+
+이 비중은 Station별 관측 기간이 다를 수 있는 누적 이용량 기준이므로, 동일 기간의 운영 효율이나 공급 부족 수준을 의미하지 않는다.
+
+## 분석 질문
+
+1. Citi Bike 이용량은 월, 요일, 시간대에 따라 어떤 차이를 보이는가?
+2. 출발량과 도착량이 집중되는 Station은 어디이며, 시간대에 따라 구성이 달라지는가?
+3. 원본 데이터에서 분석 결과에 영향을 줄 수 있는 품질 문제는 무엇인가?
+4. BigQuery에서 재사용 가능한 Data Mart와 분석 계층을 어떻게 구성할 수 있는가?
+5. SQL과 Python의 집계 결과가 동일한지 어떻게 검증할 수 있는가?
+6. 수요 규모와 상대적 변동성이 높은 Station을 어떻게 선별할 수 있는가?
+
+## 데이터 및 분석 범위
+
+| 항목 | 내용 |
+|---|---|
+| 원본 데이터 | `bigquery-public-data.new_york_citibike.citibike_trips` |
+| 데이터 기간 | 2013년 7월 ~ 2018년 5월 |
+| 원본 Grain | Trip 1건 |
+| Data Mart | `bigquery-analytics-study.bigquery_learning.station_monthly_summary` |
+| Data Mart Grain | Month × Start Station |
+| 주요 지표 | Trip Count, Net Departure, 월평균 이용량, 표준편차, CV |
+
+월별 Station Data Mart는 출발 시간과 출발 Station ID가 유효한 Trip을 대상으로 구성했다.
+따라서 원본 전체 Trip 수와 Data Mart의 집계 Trip 수는 서로 다르다.
+
+또한 2013년과 2018년은 연간 전체 기간이 아니므로 연도별 이용량을 단순 비교할 때 주의가 필요하다.
+
+## 사용 기술
+
+| 영역 | 기술 및 활용 |
+|---|---|
+| 데이터웨어하우스 | Google BigQuery |
+| SQL | GoogleSQL, CTE, JOIN, Window Function, QUALIFY |
+| 데이터 모델링 | 월별 Station Data Mart, Standard View, Materialized View |
+| 저장 구조 | Partitioning, Clustering |
+| Python 분석 | Python, pandas |
+| 시각화 | matplotlib |
+| 개발 환경 | VS Code, Jupyter Notebook |
+| 버전 관리 | Git, GitHub |
+
+## 분석 과정 및 주요 성과
+
+### 1. 데이터 탐색 및 품질 검증 — Day 1~2
+
+원본 데이터의 Grain, 기간, 주요 컬럼 및 쿼리 처리량을 확인했다.
+
+`SELECT *`와 필요한 컬럼만 선택한 조회의 처리량을 비교하여 컬럼 기반 데이터 처리 특성을 확인했다.
+
+주요 품질 검증 결과는 다음과 같다.
+
+- 원본 Trip: 58,937,715건
+- `starttime` NULL: 5,828,994건
+- `stoptime` NULL: 5,828,994건
+- 종료 시간이 시작 시간보다 빠른 Trip: 119건
+- `tripduration` 최댓값: 19,510,049초
+
+이상값을 무조건 삭제하지 않고 분석 목적에 따라 제외 여부를 판단하도록 기준을 정리했다.
+
+관련 문서: [데이터 탐색](docs/data_exploration.md) · [데이터 품질 보고서](docs/data_quality_report.md)
+
+### 2. 이용 패턴 및 Station 수요 분석 — Day 3~5
+
+월별, 요일별, 시간대별 이용량을 비교했다.
+
+전체 이용량은 평일에 더 많았고, 08시와 17~18시에 상대적으로 높은 이용량이 관찰됐다.
+주말에는 낮~오후 시간대의 이용 패턴이 상대적으로 두드러졌다.
+
+Station별 출발·도착 이용량과 Net Departure를 분석했다.
+
+`net_departure = start_count - end_count`
+
+- 전체 기간 Net Departure 최댓값: Station 519, +40,059건
+- 전체 기간 Net Departure 최솟값: Station 324, -29,976건
+- 전체 Station Flow 집계 대상: 927개 Station ID
+- 전체 출발량과 도착량: 각각 53,108,721건
+
+시간대별 주요 Station 구성이 서로 다름을 확인했다.
+
+Net Departure는 관측된 출발·도착 Trip 수의 차이이며 실제 자전거 재고량이나 부족 대수를 의미하지 않는다.
+
+관련 문서: [이용 패턴 분석](docs/analysis_plan.md) · [Station 수요 분석](docs/station_analysis.md) · [Station Flow 분석](docs/station_flow_analysis.md)
+
+### 3. BigQuery Data Mart 및 분석 계층 구축 — Day 6~8
+
+원본 Trip을 Month × Start Station 단위로 집계한 `station_monthly_summary` 테이블을 생성했다.
+
+- Data Mart: 24,876행
 - 관측 월: 53개월
-- 전체 분석 기간: 59개월
-- 누락 월: 6개월
-- 총 출발 이용량: 551,078건
-- 관측 월 기준 평균: 10,397.70건
-- SQL과 pandas 집계 검증: 전 항목 일치
+- 출발 Station: 881개
+- 전체 출발량: 53,108,721건
+- Grain 중복: 0건
+- 원본 대비 집계 합계 차이: 0건
 
-**산출물**
-- [SQL 검증 쿼리](sql/11_bigquery_python_validation.sql)
-- [Python 분석 Notebook](notebooks/11_bigquery_python_validation.ipynb)
-- [분석 보고서](docs/bigquery_python_analysis.md)
+Partitioning과 Clustering을 적용하고 데이터 정확성과 쿼리 처리량을 비교했다.
 
-### Day 12 — BigQuery × Python Analysis Pipeline
+정수 범위 Partitioning 실습에서 특정 조회의 보고된 처리량 감소를 확인했지만, 일부 비교에는 측정 방식의 한계가 있었다.
+별도로 수행한 Clustering 비교에서는 추가적인 처리량 감소가 관측되지 않았다.
 
-**Objective:** BigQuery Data Mart를 Python으로 조회하고, 데이터 품질 검증, Station별 집계 및 SQL과 pandas의 교차 검증을 수행하여 재사용 가능한 분석 파이프라인을 구성한다.
+Standard View와 Materialized View를 구성하여 분석 로직을 재사용하고 처리량을 비교했다.
 
-**Implementation**
+특정 조회에서 Materialized View의 처리량이 감소했지만, 청구 바이트는 동일했고 실행 시간 개선도 입증되지 않았다.
 
-- BigQuery 조회 결과를 pandas DataFrame으로 변환
-- NULL, 중복, 음수 이용량 및 전체 합계 검증
-- `groupby()`와 `agg()`를 활용한 Station별 지표 생성
-- 전체 이용량 Top 10과 월평균 이용량 Top 10 비교
-- `pd.merge()`를 이용한 SQL과 pandas 결과 교차 검증
-- 정수 기반 평균 검산을 통한 반올림 차이 분석
-- `validate_data()` 검증 함수 구현
-- 오류 데이터 주입을 통한 Negative Testing
+관련 문서: [Data Mart 설계](docs/data_mart_design.md) · [Partitioning 및 Clustering](docs/partition_clustering_analysis.md) · [View 설계](docs/view_design_analysis.md)
 
-**Key Results**
+### 4. SQL 기반 추세 및 통계 분석 — Day 9~10
+
+Window Function을 활용하여 Station 순위, 전월 대비 이용량 변화, 이동평균 및 상대적 변동성을 분석했다.
+
+Station 519에서 2016년 10월부터 2017년 3월까지 6개월의 관측 공백을 확인했다.
+누락된 기간을 실제 연속 월의 변화로 잘못 계산하지 않도록 비교 조건을 검증했다.
+
+- Station 519 관측 월: 53개월
+- 전월 비교 가능 월: 51개월
+- 연속 관측 구간별 순변화 합계: +13,587건
+- 2017년 4월 전체 출발량: 1,315,404건
+- 2017년 4월 Station 519 출발량: 12,408건
+
+월별 Station 점유율의 합계가 100%인지 검산하고, 행 기준 이동평균과 달력상 연속 월 기준 이동평균을 구분했다.
+
+관련 문서: [Window Function 분석](docs/window_function_analysis.md) · [고급 SQL 분석](docs/advanced_analytics.md)
+
+### 5. BigQuery와 Python 교차 검증 — Day 11~12
+
+BigQuery 조회 결과를 pandas DataFrame으로 변환하여 SQL과 Python의 집계 결과를 비교했다.
+
+Station 519의 관측 월 수, 누적 이용량, 월평균 이용량이 두 환경에서 일치함을 확인했다.
+
+전체 881개 Station에 대해서도 집계 결과를 비교했다.
 
 - 분석 행 수: 24,876건
-- 분석 Station 수: 881개
-- 전체 이용량: 53,108,721건
-- NULL, 중복, 음수 이용량: 0건
+- Station 수: 881개
+- NULL·중복·음수 이용량: 0건
 - 집계 전후 전체 이용량 차이: 0건
-- 전체 이용량 Top 10과 월평균 Top 10의 공통 Station: 7개
-- SQL과 pandas의 평균 표시값 불일치: 18개
+- SQL과 Python의 반올림된 평균 표시값 차이: 18개 Station
 - 정수 기반 평균 검산: 881개 Station 전체 일치
-- 정상 데이터 검증: 통과
-- 오류 데이터 검증: 실패 정상 감지
 
-**Key Learnings**
+`validate_data()` 함수를 작성하고 오류 데이터를 의도적으로 주입하여 음수 이용량과 합계 오류를 감지하는지 확인했다.
 
-- BigQuery SQL과 pandas 집계 로직 비교
-- 데이터 Grain과 집계 정확성 검증
-- 누적 이용량과 월평균 이용량의 해석 차이
-- 부동소수점 및 반올림 차이의 원인 조사
-- 재사용 가능한 데이터 품질 검증 함수 구현
-- Negative Testing을 통한 검증 로직 확인
+Windows 애플리케이션 제어 정책으로 `pyarrow` DLL이 차단된 환경에서는 BigQuery 결과를 Python 객체로 가져온 뒤 pandas DataFrame으로 구성하는 방식을 사용했다.
 
-**Deliverables**
+관련 문서: [Python 연동 분석](docs/bigquery_python_analysis.md) · [데이터 분석 파이프라인](docs/bigquery_pipeline_analysis.md)
 
-- `sql/12_station_pipeline_validation.sql`
-- `notebooks/12_bigquery_analysis_pipeline.ipynb`
-- `docs/bigquery_pipeline_analysis.md`
+### 6. 최종 Station 후보 선정 — Day 13
 
-**Status:** Day 12 completed.
+월별 Station 출발량을 기준으로 관측 기간, 월평균 이용량, 변동계수(CV)를 결합한 후보 선정 규칙을 적용했다.
 
-### Day 13 — Final Station Demand & Variability Analysis
+**후보 선정 기준**
 
-**Objective:** NYC Citi Bike의 Station별 월평균 이용량과 수요 변동성을 분석하여 운영상 우선 검토할 Station 후보를 선정한다.
+1. 관측 월 수 24개월 이상
+2. 해당 Station 그룹에서 월평균 이용량 상위 25%
+3. 고수요 그룹에서 CV 상위 25%
 
-**Analysis Process**
+**선정 결과**
 
-- BigQuery Data Mart 조회 및 Python 분석
-- 관측 기간 24개월 이상 Station 필터링
-- 월평균 이용량 상위 25% 선정
-- 고수요 그룹 내 CV 상위 25% 선정
-- Station 514와 2006의 월별 이용 패턴 비교
-- 누락 월을 `NaN`으로 유지한 시계열 시각화
-- 최종 후보 선정 조건 및 집합 일치 검증
-- 운영 의사결정 제안과 분석 한계 정리
-
-**Key Results**
-
-| Metric | Result |
+| 단계 | Station 수 |
 |---|---:|
-| Total Stations | 881 |
-| Eligible Stations | 461 |
-| High-Demand Stations | 116 |
-| Priority Candidates | 29 |
-| Candidate Total Trips | 5,993,530 |
-| Total Trips | 53,108,721 |
-| Candidate Trip Share | 11.29% |
-| Average Candidate CV | 49.96% |
+| 전체 | 881개 |
+| 관측 월 기준 충족 | 461개 |
+| 월평균 이용량 기준 충족 | 116개 |
+| 최종 후보 | 29개 |
 
-**Key Findings**
+CV가 가장 높은 후보는 Station 514였다.
 
-- 전체 Station의 약 3.3%에 해당하는 29개를 추가 운영 검토 후보로 선정했다.
-- 후보 29개의 누적 이용량은 전체 관측 이용량의 11.29%였다.
-- Station 514는 월평균 약 5,167.87건, CV 약 66.59%를 기록했다.
-- Station 514와 2006은 관측 월이 동일하고 평균 이용량도 비슷했지만 변동성에는 차이가 있었다.
-- 최종 후보 선정 조건, 누락, 중복 및 후보 집합 검증을 통과했다.
+| 지표 | Station 514 | Station 2006 |
+|---|---:|---:|
+| 관측 월 수 | 53 | 53 |
+| 월평균 이용량 | 5,167.87 | 5,034.94 |
+| 모집단 표준편차 | 3,441.51 | 2,981.51 |
+| CV | 66.59% | 59.22% |
 
-**Business Implications**
+두 Station의 관측 월은 동일했고 월평균 이용량도 비슷했지만 Station 514의 상대적 변동성이 더 높았다.
 
-선정된 29개 Station은 추가 운영 분석의 우선 검토 대상이다.
-실제 자전거 배치 결정에는 시간대별 대여·반납량과 재고 및 대여 실패 데이터가 필요하다.
+최종 후보 29개에 대한 선정 조건, 누락, 잘못된 포함 및 중복 검증을 모두 통과했다.
 
-**Deliverables**
+**운영 관점의 결론**
 
-- [SQL — Final Station Analysis](sql/13_final_station_analysis.sql)
-- [Notebook — Final BigQuery Analysis](notebooks/13_bigquery_final_analysis.ipynb)
-- [Report — Final Station Analysis](docs/final_station_analysis.md)
+29개 Station은 자전거를 즉시 추가 배치할 대상이 아니라 추가 운영 분석을 위한 우선 검토 후보로 제안한다.
+실제 배치 결정에는 시간대별 대여·반납량, 자전거 재고, 대여 실패 및 재배치 기록이 필요하다.
 
-**Status:** Day 13 analysis completed; final SQL reproduction and repository registration pending.
+관련 문서: [최종 Station 분석 보고서](docs/final_station_analysis.md)
+
+## 데이터 검증 및 분석의 한계
+
+본 프로젝트는 분석 결과의 재현성과 집계 정확성을 확인하기 위해 여러 단계의 검산을 수행했다.
+
+- 원본과 Data Mart의 전체 이용량 및 집계 단위 비교
+- JOIN 전후 집계 합계 보존 확인
+- Station별 NULL 및 중복 검증
+- SQL과 pandas의 집계 결과 교차 검증
+- 누락된 관측 월 식별
+- 최종 후보 선정 조건 및 집합 일치 검증
+- 오류 데이터 주입을 통한 검증 함수 테스트
+
+다만 다음과 같은 한계가 있다.
+
+- 과거 Trip 기록을 사용하므로 현재의 운영 상태를 나타내지 않는다.
+- 관측 월 수가 실제 Station 운영 기간과 동일하다고 단정할 수 없다.
+- 일부 Station ID에서 복수의 Station Name이 관찰됐으며 물리적 Station의 동일성은 별도로 검증하지 않았다.
+- 월별 출발량에는 계절성, 장기 추세 및 관측 공백의 영향이 포함될 수 있다.
+- 실제 자전거 재고와 대여 실패 데이터가 없어 공급 부족 여부를 판단할 수 없다.
+- 후보 선정 기준은 탐색적 규칙이며 실제 운영 성과를 기준으로 최적화한 결과가 아니다.
+- Day 13 최종 SQL의 Python 결과 재현 검증은 별도 확인이 필요하다.
+
+## 프로젝트 산출물
+
+### SQL
+
+| 단계 | 파일 |
+|---|---|
+| Day 1 | [BigQuery 기초](sql/01_bigquery_basics.sql) |
+| Day 2 | [데이터 품질 검증](sql/02_data_quality_check.sql) |
+| Day 3 | [이용 패턴 분석](sql/03_usage_pattern_analysis.sql) |
+| Day 4 | [Station 수요 분석](sql/04_station_analysis.sql) |
+| Day 5 | [Station Flow 분석](sql/05_station_flow_analysis.sql) |
+| Day 6 | [Data Mart 구축](sql/06_create_data_mart.sql) |
+| Day 7 | [Partitioning 및 Clustering](sql/07_partition_clustering.sql) |
+| Day 8 | [View 설계](sql/08_bigquery_views.sql) |
+| Day 9 | [Window Function](sql/09_window_functions.sql) |
+| Day 10 | [고급 SQL 분석](sql/10_advanced_analytics.sql) |
+| Day 11 | [Python 연동 검증](sql/11_bigquery_python_validation.sql) |
+| Day 12 | [분석 파이프라인 검증](sql/12_station_pipeline_validation.sql) |
+| Day 13 | [최종 Station 분석](sql/13_final_station_analysis.sql) |
+
+### Python Notebooks
+
+- [BigQuery 기초 분석](notebooks/01_bigquery_analysis.ipynb)
+- [Day 11 Python 연동 검증](notebooks/11_bigquery_python_validation.ipynb)
+- [Day 12 분석 파이프라인](notebooks/12_bigquery_analysis_pipeline.ipynb)
+- [Day 13 최종 분석](notebooks/13_bigquery_final_analysis.ipynb)
+
+### 분석 보고서
+
+- [분석 계획 및 이용 패턴](docs/analysis_plan.md)
+- [데이터 탐색](docs/data_exploration.md)
+- [데이터 품질 검증](docs/data_quality_report.md)
+- [Station 수요 분석](docs/station_analysis.md)
+- [Station Flow 분석](docs/station_flow_analysis.md)
+- [Data Mart 설계](docs/data_mart_design.md)
+- [Partitioning 및 Clustering 분석](docs/partition_clustering_analysis.md)
+- [View 설계 및 검증](docs/view_design_analysis.md)
+- [Window Function 분석](docs/window_function_analysis.md)
+- [고급 SQL 분석](docs/advanced_analytics.md)
+- [BigQuery와 Python 연동](docs/bigquery_python_analysis.md)
+- [Python 분석 파이프라인](docs/bigquery_pipeline_analysis.md)
+- [최종 Station 운영 검토 후보 분석](docs/final_station_analysis.md)
+
+## 결론
+
+BigQuery와 Python을 활용하여 대규모 공개 데이터의 탐색, 품질 검증, 집계 모델링, SQL 분석, 시각화 및 결과 검산을 수행했다.
+
+분석 결과를 단순히 나열하는 대신 수요 규모와 변동성을 결합하여 29개 Station을 운영 우선 검토 후보로 선정했다.
+
+또한 데이터의 관측 공백, 집계 기준 차이, 반올림 문제 및 운영 데이터의 부재를 분석 한계로 구분하여 결과를 과도하게 해석하지 않도록 했다.
+
+본 프로젝트는 SQL 작성뿐 아니라 **분석 설계 → 데이터 검증 → 결과 해석 → 업무 의사결정 제안**의 과정을 수행한 사례다.

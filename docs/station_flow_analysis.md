@@ -1,53 +1,61 @@
-# Day 5 - Station Flow Analysis
+# Day 5 — NYC Citi Bike Station 출발·도착 흐름 분석
 
-## 1. Business Question
+## 1. 분석 목적
 
-Station별 출발 Trip과 도착 Trip은 얼마나 차이가 나며, 시간대에 따라 출발과 도착의 상대적인 크기가 달라지는가?
+NYC Citi Bike의 Station별 출발 Trip과 도착 Trip을 비교하여 이동 흐름의 차이를 분석했다.
 
-## 2. Analysis Overview
+전체 기간과 주요 시간대의 Net Departure를 계산하고, Station별 출발·도착 흐름이 시간에 따라 어떻게 달라지는지 확인했다.
 
-- Data Source: `bigquery-public-data.new_york_citibike.citibike_trips`
-- Analysis Tool: Google BigQuery
-- Original Grain: 1 row = 1 Trip
-- Overall Flow Grain: 1 row = Station
-- Hourly Flow Grain: 1 row = Hour × Station
-- Overall Join Key: `station_id`
-- Hourly Join Key: `trip_hour`, `station_id`
-- Primary Metrics: `start_count`, `end_count`, `net_departure`
+또한 JOIN 전후 집계 합계가 보존되는지 검증하여 분석 결과의 정확성을 확인했다.
 
-### Metric Definition
+## 2. 데이터 및 분석 기준
+
+| 항목 | 내용 |
+|---|---|
+| 원본 테이블 | `bigquery-public-data.new_york_citibike.citibike_trips` |
+| 분석 도구 | Google BigQuery |
+| 원본 Grain | Trip 1건 |
+| 전체 Flow Grain | Station |
+| 시간대별 Flow Grain | Hour × Station |
+| 전체 Flow JOIN Key | `station_id` |
+| 시간대별 Flow JOIN Key | `trip_hour`, `station_id` |
+| 주요 지표 | `start_count`, `end_count`, `net_departure` |
+
+### 지표 정의
 
 `net_departure = start_count - end_count`
 
-- Positive: 출발 Trip이 도착 Trip보다 많음.
-- Negative: 도착 Trip이 출발 Trip보다 많음.
-- Zero: 출발 Trip과 도착 Trip 수가 동일함.
+- 양수: 출발 Trip이 도착 Trip보다 많음
+- 음수: 도착 Trip이 출발 Trip보다 많음
+- 0: 출발 Trip과 도착 Trip 수가 동일함
 
-Net Departure는 분석 기간에 관측된 출발·도착 Trip 수의 차이를 의미하며, 실제 자전거 재고량이나 부족 대수를 의미하지 않는다.
+Net Departure는 관측된 출발·도착 Trip 수의 차이이며 실제 자전거 재고량이나 부족 대수를 의미하지 않는다.
 
-## 3. Data Quality and Aggregation Decision
+## 3. 데이터 품질 및 집계 기준
 
-### Station ID and Name Validation
+### 3.1 Station ID와 Station Name 관계
 
-Station ID별 고유 Station Name 개수를 확인한 결과, 47개의 출발 Station ID에서 두 개 이상의 Station Name이 관찰되었다.
+Station ID별 고유 Station Name 수를 확인한 결과, 47개의 출발 Station ID에서 두 개 이상의 Station Name이 관찰됐다.
 
-따라서 Station ID와 Station Name이 항상 1:1 관계를 유지한다고 가정할 수 없으며, 동일한 Station ID가 이름별로 분리 집계될 가능성이 확인되었다.
+따라서 Station ID와 Station Name이 항상 일대일 관계라고 가정할 수 없다.
 
-### Aggregation Decision
+Station ID와 Station Name을 함께 그룹화하면 동일 ID의 이용량이 여러 이름으로 분리 집계될 가능성이 있다.
 
-Day 4에서는 Station ID와 Station Name을 함께 GROUP BY에 사용했으나, Day 5에서는 Station ID만을 기준으로 집계하도록 변경하였다.
+### 3.2 집계 기준 변경
 
-Station Name은 향후 대표 이름을 결정하거나 별도의 매핑 관계를 검증한 뒤 결과 표시용으로 추가할 예정이다.
+Day 4에서는 Station ID와 Station Name을 함께 사용했지만, Day 5에서는 Station ID만을 기준으로 출발량과 도착량을 집계했다.
 
-Station ID의 재사용 여부와 물리적 Station의 동일성은 아직 확인되지 않았으므로 분석 기간 전체에서 동일 ID가 동일한 물리적 Station을 의미한다는 가정에는 한계가 있다.
+Station Name의 대표값을 결정하거나 이름을 표준화하는 작업은 이번 분석 범위에 포함하지 않았다.
 
-## 4. Overall Station Flow
+또한 동일한 Station ID가 전체 분석 기간에 걸쳐 동일한 물리적 Station을 의미하는지는 별도로 검증하지 않았다.
 
-출발 Trip과 도착 Trip을 각각 Station ID 기준으로 집계한 뒤 FULL OUTER JOIN으로 결합하였다.
+## 4. 전체 기간 Station Flow 분석
 
-### Top 10 Net Departures
+출발 Trip과 도착 Trip을 Station ID 기준으로 각각 집계한 뒤 `FULL OUTER JOIN`으로 결합했다.
 
-| Station ID | Start Count | End Count | Net Departure |
+### 4.1 Net Departure 상위 10개
+
+| Station ID | 출발량 | 도착량 | Net Departure |
 |---|---:|---:|---:|
 | 519 | 551,078 | 511,019 | +40,059 |
 | 521 | 268,807 | 231,151 | +37,656 |
@@ -60,15 +68,15 @@ Station ID의 재사용 여부와 물리적 Station의 동일성은 아직 확�
 | 465 | 218,755 | 200,169 | +18,586 |
 | 468 | 174,864 | 158,280 | +16,584 |
 
-### Observation
+Station 519의 Net Departure가 +40,059건으로 가장 높았다.
 
-Station 519는 전체 기간의 Net Departure가 +40,059건으로 가장 높았으며, Station 521과 Station 517이 각각 +37,656건, +35,345건으로 그 뒤를 이었다.
+Station 521과 517은 각각 +37,656건, +35,345건으로 뒤를 이었다.
 
-이들 Station에서는 분석 기간 전체에 걸쳐 도착 Trip보다 출발 Trip이 더 많이 기록되었다.
+이들 Station에서는 분석 기간 전체에 걸쳐 도착 Trip보다 출발 Trip이 더 많이 관측됐다.
 
-### Top 10 Net Arrivals
+### 4.2 Net Departure 하위 10개
 
-| Station ID | Start Count | End Count | Net Departure |
+| Station ID | 출발량 | 도착량 | Net Departure |
 |---|---:|---:|---:|
 | 324 | 72,790 | 102,766 | -29,976 |
 | 492 | 249,341 | 276,269 | -26,928 |
@@ -81,27 +89,31 @@ Station 519는 전체 기간의 Net Departure가 +40,059건으로 가장 높았�
 | 432 | 226,682 | 238,874 | -12,192 |
 | 415 | 96,779 | 108,524 | -11,745 |
 
-### Observation
+Station 324의 Net Departure가 -29,976건으로 가장 낮았다.
 
-Station 324는 전체 기간의 Net Departure가 -29,976건으로 가장 낮았으며, Station 492와 Station 497이 각각 -26,928건, -21,126건을 기록하였다.
+Station 492와 497은 각각 -26,928건, -21,126건을 기록했다.
 
-이들 Station에서는 분석 기간 전체에 걸쳐 출발 Trip보다 도착 Trip이 더 많이 기록되었다.
+이들 Station에서는 분석 기간 전체에 걸쳐 출발 Trip보다 도착 Trip이 더 많이 관측됐다.
 
-### Interpretation
+### 4.3 전체 기간 분석 결과
 
-전체 기간의 출발량과 도착량은 Station별로 차이가 있으며, 일부 Station에서는 출발량이 더 많고 다른 Station에서는 도착량이 더 많은 패턴이 관찰되었다.
+Station별 출발량과 도착량은 서로 다른 분포를 보였다.
 
-전체 기간을 합산한 결과만으로는 특정 시간대에 발생하는 이동 흐름의 차이를 확인하기 어려우므로 시간대별 분석을 추가로 수행하였다.
+일부 Station에서는 출발량이 더 많았고, 다른 Station에서는 도착량이 더 많았다.
 
-## 5. Hourly Station Flow
+다만 전체 기간을 합산한 Net Departure는 특정 날짜나 시간대의 이동 흐름을 설명하지 못하므로 시간대별 분석을 추가로 수행했다.
 
-Day 3에서 이용량이 높게 나타난 08시, 17시, 18시를 대상으로 시간대별 Net Departure TOP 5를 분석하였다.
+## 5. 시간대별 Station Flow 분석
 
-출발 Trip은 `starttime`, 도착 Trip은 `stoptime`을 기준으로 시간을 추출하였으며, `trip_hour`와 `station_id`를 함께 JOIN Key로 사용하였다.
+Day 3에서 이용량이 높게 나타난 08시, 17시, 18시를 주요 비교 시간대로 선정했다.
 
-### 08:00 - Top 5 Net Departures
+출발 Trip의 시간은 `starttime`, 도착 Trip의 시간은 `stoptime`을 기준으로 추출했다.
 
-| Station ID | Start Count | End Count | Net Departure |
+시간대별 출발량과 도착량은 `trip_hour`와 `station_id`를 함께 JOIN Key로 사용하여 결합했다.
+
+### 5.1 08시 Net Departure 상위 5개
+
+| Station ID | 출발량 | 도착량 | Net Departure |
 |---|---:|---:|---:|
 | 521 | 43,431 | 11,478 | +31,953 |
 | 432 | 31,100 | 3,563 | +27,537 |
@@ -109,11 +121,13 @@ Day 3에서 이용량이 높게 나타난 08시, 17시, 18시를 대상으로 �
 | 445 | 27,047 | 5,152 | +21,895 |
 | 3230 | 20,841 | 949 | +19,892 |
 
-08시에는 Station 521이 +31,953건으로 가장 높은 Net Departure를 기록하였으며, Station 432와 Station 511이 그 뒤를 이었다.
+08시에는 Station 521이 +31,953건으로 가장 높은 Net Departure를 기록했다.
 
-### 17:00 - Top 5 Net Departures
+Station 432와 511이 각각 +27,537건, +26,412건으로 뒤를 이었다.
 
-| Station ID | Start Count | End Count | Net Departure |
+### 5.2 17시 Net Departure 상위 5개
+
+| Station ID | 출발량 | 도착량 | Net Departure |
 |---|---:|---:|---:|
 | 359 | 51,364 | 15,047 | +36,317 |
 | 520 | 33,711 | 7,504 | +26,207 |
@@ -121,11 +135,13 @@ Day 3에서 이용량이 높게 나타난 08시, 17시, 18시를 대상으로 �
 | 281 | 38,013 | 15,868 | +22,145 |
 | 3443 | 23,082 | 2,294 | +20,788 |
 
-17시에는 Station 359가 +36,317건으로 가장 높은 Net Departure를 기록하였으며, 08시와는 다른 Station들이 상위권에 나타났다.
+17시에는 Station 359가 +36,317건으로 가장 높은 Net Departure를 기록했다.
 
-### 18:00 - Top 5 Net Departures
+08시와는 다른 Station들이 상위권에 나타났다.
 
-| Station ID | Start Count | End Count | Net Departure |
+### 5.3 18시 Net Departure 상위 5개
+
+| Station ID | 출발량 | 도착량 | Net Departure |
 |---|---:|---:|---:|
 | 402 | 54,698 | 29,112 | +25,586 |
 | 377 | 24,819 | 7,294 | +17,525 |
@@ -133,101 +149,118 @@ Day 3에서 이용량이 높게 나타난 08시, 17시, 18시를 대상으로 �
 | 359 | 23,252 | 8,652 | +14,600 |
 | 281 | 26,302 | 13,702 | +12,600 |
 
-18시에는 Station 402가 +25,586건으로 가장 높은 Net Departure를 기록하였으며, Station 519도 +15,232건으로 TOP 5에 포함되었다.
+18시에는 Station 402가 +25,586건으로 가장 높은 Net Departure를 기록했다.
 
-## 6. Hourly Comparison
+Station 519도 +15,232건으로 상위 5개에 포함됐다.
 
-08시와 17시의 Net Departure TOP 5에는 공통 Station이 없었으며, 17시와 18시에는 Station 359, 402, 281이 공통으로 포함되었다.
+## 6. 시간대별 비교 결과
 
-Station 519는 전체 기간의 Net Departure가 가장 높았지만 08시와 17시의 TOP 5에는 포함되지 않았으며, 18시에는 3위를 기록하였다.
+08시와 17시의 Net Departure 상위 5개에는 공통 Station이 없었다.
 
-### Interpretation
+17시와 18시에는 Station 359, 402, 281이 공통으로 포함됐다.
 
-Station별 출발량과 도착량의 차이는 시간대에 따라 다르게 나타나며, 전체 기간에서 차이가 큰 Station이 모든 시간대에서 동일하게 높은 차이를 보이는 것은 아니다.
+Station 519는 전체 기간의 Net Departure가 가장 높았지만 08시와 17시의 상위 5개에는 포함되지 않았으며, 18시에는 3위를 기록했다.
 
-시간대별 Flow는 여러 날짜의 동일한 시간을 합산한 결과이므로 특정 날짜의 실제 Station 상태를 나타내지는 않는다.
+따라서 전체 기간의 Net Departure가 큰 Station이 모든 시간대에서도 동일하게 높은 순위를 기록하는 것은 아니었다.
 
-## 7. SQL Design
+다만 시간대별 결과는 여러 날짜의 동일한 시간을 합산한 값이므로 특정 날짜의 실제 Station 상태를 나타내지는 않는다.
 
-### FULL OUTER JOIN
+## 7. SQL 설계
 
-출발 집계와 도착 집계 중 한쪽에만 존재하는 Station도 결과에 포함하기 위해 FULL OUTER JOIN을 사용하였다.
+### 7.1 FULL OUTER JOIN
 
-### COALESCE
+출발 집계와 도착 집계 중 한쪽에만 존재하는 Station도 결과에 포함하기 위해 `FULL OUTER JOIN`을 사용했다.
 
-한쪽 집계에 출발량 또는 도착량이 존재하지 않는 경우 NULL을 0으로 변환하여 Net Departure를 계산하였다.
+### 7.2 COALESCE
 
-### Join Key
+한쪽 집계에 출발량 또는 도착량이 존재하지 않는 경우 `COALESCE()`를 사용하여 NULL을 0으로 변환한 뒤 Net Departure를 계산했다.
 
-전체 Station Flow는 Station ID를 기준으로 JOIN하였으며, 시간대별 Station Flow는 Hour와 Station ID를 함께 사용하여 서로 다른 시간대의 데이터가 연결되지 않도록 하였다.
+### 7.3 JOIN Key
 
-### Grain
+전체 Station Flow는 `station_id`를 기준으로 결합했다.
 
-전체 Station Flow의 Grain은 Station이며, 시간대별 Station Flow의 Grain은 Hour × Station으로 정의하였다.
+시간대별 Station Flow는 `trip_hour`와 `station_id`를 함께 사용하여 서로 다른 시간대의 데이터가 잘못 결합되지 않도록 했다.
 
-## 8. Validation Results
+### 7.4 Grain
 
-### Station Flow Validation
+전체 Station Flow의 Grain은 Station이다.
 
-| Validation Metric | Result |
+시간대별 Station Flow의 Grain은 Hour × Station이다.
+
+집계와 JOIN 과정에서 Grain을 일관되게 유지하는 것이 중요하다.
+
+## 8. 데이터 검증
+
+### 8.1 전체 Station Flow 검증
+
+| 검증 지표 | 결과 |
 |---|---:|
-| Total Rows | 927 |
-| Unique Stations | 927 |
-| Duplicate Count | 0 |
-| Total Start Trips | 53,108,721 |
-| Total End Trips | 53,108,721 |
-| Total Net Departure | 0 |
-| NULL Station ID Count | 0 |
-| Calculation Error Count | 0 |
+| 전체 결과 행 수 | 927 |
+| 고유 Station ID | 927 |
+| 중복 Station ID | 0 |
+| 전체 출발량 | 53,108,721 |
+| 전체 도착량 | 53,108,721 |
+| Net Departure 합계 | 0 |
+| NULL Station ID | 0 |
+| Net Departure 계산 오류 | 0 |
 
-### JOIN Aggregate Preservation
+전체 Station Flow는 927행으로 구성됐으며 고유 Station ID도 927개였다.
 
-| Metric | Before JOIN | After JOIN |
+Station ID 기준 중복은 발견되지 않았다.
+
+전체 출발량과 도착량은 각각 53,108,721건으로 일치했고 Net Departure 합계는 0이었다.
+
+NULL Station ID와 Net Departure 계산 오류도 발견되지 않았다.
+
+**전체 Flow의 927개 Station ID는 출발과 도착에 등장한 ID를 통합한 결과다.**
+**후속 월별 출발 Station Data Mart의 881개와는 집계 범위가 다르므로 동일한 수치로 비교하면 안 된다.**
+
+### 8.2 JOIN 전후 집계 합계 보존
+
+| 지표 | JOIN 이전 | JOIN 이후 |
 |---|---:|---:|
-| Start Trips | 53,108,721 | 53,108,721 |
-| End Trips | 53,108,721 | 53,108,721 |
+| 출발 Trip | 53,108,721 | 53,108,721 |
+| 도착 Trip | 53,108,721 | 53,108,721 |
 
-### Validation Interpretation
+JOIN 전후 출발량과 도착량이 각각 동일하게 유지됐다.
 
-전체 Station Flow는 927행으로 구성되었으며, 고유 Station ID 역시 927개로 확인되어 Station ID 기준 중복이 발견되지 않았다.
+따라서 전체 Station Flow의 JOIN 과정에서 집계 합계의 증가나 감소가 발견되지 않았다.
 
-전체 출발 Trip과 도착 Trip은 각각 53,108,721건으로 동일하였으며, 전체 Net Departure 합계는 0건이었다.
+### 8.3 검증 범위
 
-JOIN 전후 출발 Trip 합계와 도착 Trip 합계가 각각 동일하게 유지되어 JOIN으로 인한 집계 합계의 증가나 감소가 발견되지 않았다.
+전체 Station Flow에 대해서는 키 유일성, 계산 일관성 및 JOIN 전후 합계 보존을 검증했다.
 
-NULL Station ID와 Net Departure 계산 오류는 모두 0건으로 확인되었다.
+시간대별 Station Flow의 JOIN 결과에 대해서는 별도의 합계 보존 검증을 수행하지 않았다.
 
-따라서 현재 분석에서 정의한 전체 Station Flow의 키 유일성, 계산 일관성, JOIN 전후 합계 보존 검증을 통과하였다.
+따라서 전체 Flow의 검증 결과를 시간대별 Flow에도 그대로 적용할 수는 없다.
 
-단, 이 검증 결과는 전체 Station Flow에 대한 것이며, 시간대별 Station Flow의 JOIN 결과는 별도로 합계 보존을 검증하지 않았다.
+## 9. 운영 관점의 해석
 
-## 9. Operational Interpretation
+전체 기간과 주요 시간대에서 Station별 출발량과 도착량의 차이가 서로 다르게 나타났다.
 
-전체 기간과 시간대별로 Station의 출발량과 도착량 차이가 서로 다르게 나타나는 것이 확인되었다.
+이 결과는 Station별 이동 흐름의 방향성과 시간대별 차이를 이해하기 위한 기초 자료로 활용할 수 있다.
 
-이러한 결과는 Station별 이동 흐름의 방향성과 시간대별 차이를 이해하기 위한 기초 자료로 활용할 수 있다.
+그러나 Net Departure는 Trip 기록에서 계산한 출발·도착 차이이므로 실제 자전거 재고 상태나 공급 부족 여부를 직접 나타내지는 않는다.
 
-다만 Net Departure는 Trip 기록에서 계산한 출발·도착 차이이므로 실제 자전거 재고 상태나 부족 여부를 직접 나타내지는 않는다.
+실제 운영 의사결정에는 Station 수용량, 시간대별 재고량, 재배치 기록 등의 추가 데이터가 필요하다.
 
-실제 운영상의 문제나 재배치 필요성을 판단하려면 Station 수용량, 시간대별 재고량, 재배치 기록 등의 추가 데이터가 필요하다.
+## 10. 분석의 한계
 
-## 10. Limitations
+- 데이터는 2013년 7월부터 2018년 5월까지의 과거 기록이며 첫해와 마지막 해는 부분 기간이다.
+- 47개 출발 Station ID에서 복수의 Station Name이 관찰됐지만 이름 차이의 원인은 검증하지 않았다.
+- Station ID가 분석 기간 전체에서 동일한 물리적 Station을 의미하는지는 확인하지 않았다.
+- Station ID 또는 분석 기준 시간이 NULL인 Trip은 해당 방향의 집계에서 제외했다.
+- 시간대별 Flow는 여러 날짜의 동일한 시간을 합산한 결과이며 특정 날짜의 상태를 나타내지 않는다.
+- 시간대별 분석은 Net Departure가 큰 양수인 Station을 중심으로 수행했다.
+- 시간대별 Flow의 JOIN 전후 합계 보존은 별도로 검증하지 않았다.
+- Trip 기록만으로 실제 자전거 재고, 대여 실패, 이용 목적 및 운영상 문제를 확정할 수 없다.
 
-- 분석 데이터는 2013년 7월부터 2018년 5월까지의 과거 Trip 기록이며, 첫해와 마지막 해는 부분 기간이다.
-- 47개 Station ID에서 복수의 Station Name이 확인되었으나 이름 차이의 원인은 검증되지 않았다.
-- Station ID가 분석 기간 전체에서 동일한 물리적 Station을 의미하는지는 추가 검증이 필요하다.
-- Station ID 또는 분석 기준 시간이 NULL인 Trip은 해당 방향의 집계에서 제외하였다.
-- 시간대별 Flow는 여러 날짜의 동일한 시간을 합산한 결과이며 특정 날짜의 상태를 의미하지 않는다.
-- 시간대별 분석에서는 Net Departure가 큰 양수인 Station을 중심으로 TOP 5를 확인하였다.
-- 전체 Station Flow의 JOIN 검증은 완료했으나 시간대별 Flow의 집계 보존 검증은 수행하지 않았다.
-- Trip 데이터만으로 실제 Station 재고, 이용 목적, 운영상 문제의 발생 여부를 판단할 수 없다.
+## 11. 결론
 
-## 11. Conclusion
+전체 Station Flow에서 927개의 고유 Station ID를 확인했으며 출발량과 도착량의 합계는 각각 53,108,721건으로 일치했다.
 
-전체 927개 Station의 출발·도착 Trip을 비교한 결과, 전체 출발량과 도착량은 동일하지만 개별 Station에서는 서로 다른 출발·도착 차이가 나타났다.
+개별 Station에서는 서로 다른 출발·도착 차이가 나타났으며 08시, 17시, 18시의 주요 Station 구성도 서로 달랐다.
 
-08시, 17시, 18시의 Net Departure 상위 Station 구성이 달라지는 것을 확인하여 Station Flow 분석에서는 시간 Dimension을 함께 고려해야 한다는 결론을 얻었다.
+전체 Station Flow는 Station ID 중복, NULL, 계산 오류 및 JOIN 전후 집계 합계 보존 검증을 통과했다.
 
-전체 Station Flow는 Station ID 중복, NULL, 계산 오류, JOIN 전후 집계 합계 보존 검증을 통과하였다.
-
-현재 분석은 Station별 Trip 흐름을 설명하는 탐색적 분석이며 실제 운영상 문제나 원인을 확인하려면 추가 데이터가 필요하다.
+이번 분석은 Station별 이동 흐름을 설명하는 탐색적 분석이며, 실제 운영상의 문제나 공급 부족 여부를 판단하려면 추가 운영 데이터가 필요하다.
