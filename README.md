@@ -392,3 +392,52 @@ Station 519의 월별 출발 이용량을 대상으로 SQL과 pandas의 결과�
 - `docs/bigquery_pipeline_analysis.md`
 
 **Status:** Day 12 completed.
+
+### Day 13 — Final Station Demand & Variability Analysis
+
+**Objective:** NYC Citi Bike의 Station별 월평균 이용량과 수요 변동성을 분석하여 운영상 우선 검토할 Station 후보를 선정한다.
+
+**Analysis Process**
+
+- BigQuery Data Mart 조회 및 Python 분석
+- 관측 기간 24개월 이상 Station 필터링
+- 월평균 이용량 상위 25% 선정
+- 고수요 그룹 내 CV 상위 25% 선정
+- Station 514와 2006의 월별 이용 패턴 비교
+- 누락 월을 `NaN`으로 유지한 시계열 시각화
+- 최종 후보 선정 조건 및 집합 일치 검증
+- 운영 의사결정 제안과 분석 한계 정리
+
+**Key Results**
+
+| Metric | Result |
+|---|---:|
+| Total Stations | 881 |
+| Eligible Stations | 461 |
+| High-Demand Stations | 116 |
+| Priority Candidates | 29 |
+| Candidate Total Trips | 5,993,530 |
+| Total Trips | 53,108,721 |
+| Candidate Trip Share | 11.29% |
+| Average Candidate CV | 49.96% |
+
+**Key Findings**
+
+- 전체 Station의 약 3.3%에 해당하는 29개를 추가 운영 검토 후보로 선정했다.
+- 후보 29개의 누적 이용량은 전체 관측 이용량의 11.29%였다.
+- Station 514는 월평균 약 5,167.87건, CV 약 66.59%를 기록했다.
+- Station 514와 2006은 관측 월이 동일하고 평균 이용량도 비슷했지만 변동성에는 차이가 있었다.
+- 최종 후보 선정 조건, 누락, 중복 및 후보 집합 검증을 통과했다.
+
+**Business Implications**
+
+선정된 29개 Station은 추가 운영 분석의 우선 검토 대상이다.
+실제 자전거 배치 결정에는 시간대별 대여·반납량과 재고 및 대여 실패 데이터가 필요하다.
+
+**Deliverables**
+
+- [SQL — Final Station Analysis](sql/13_final_station_analysis.sql)
+- [Notebook — Final BigQuery Analysis](notebooks/13_bigquery_final_analysis.ipynb)
+- [Report — Final Station Analysis](docs/final_station_analysis.md)
+
+**Status:** Day 13 analysis completed; final SQL reproduction and repository registration pending.
